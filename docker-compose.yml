@@ -1,0 +1,53 @@
+version: '3'
+
+services:
+    omure_php-fpm:
+        build:
+            context: './'
+        container_name: omure_php-fpm
+        stdin_open: true
+        tty: true
+        volumes:
+            - ./:/var/www
+        networks:
+            - omure
+        environment:
+            - DB_DATABASE=${DB_DATABASE}
+            - DB_USERNAME=${DB_ROOT_USERNAME}
+            - DB_PASSWORD=${DB_ROOT_PASSWORD}
+
+    omure_db:
+        image: mariadb:10.6
+        container_name: omure_db
+        hostname: omure_db
+        ports:
+            - "${FORWARD_DB_PORT:-3306}:3306"
+        volumes:
+            - omure-data:/var/lib/mariadb
+        environment:
+            - MARIADB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+            - MARIADB_DATABASE=${DB_DATABASE}
+        networks:
+            - omure
+
+    omure_nginx:
+        image: nginx:alpine
+        container_name: omure_nginx
+        stdin_open: true
+        tty: true
+        ports:
+            - "${APP_PORT:-80}:80"
+            - "${APP_HTTPS_PORT:-443}:443"
+        volumes:
+            - ./:/var/www/
+            - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
+        networks:
+            - omure
+
+volumes:
+    omure-data:
+        external: true
+
+networks:
+    omure:
+        driver: bridge
